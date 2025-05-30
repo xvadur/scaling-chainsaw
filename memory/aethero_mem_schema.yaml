@@ -1,0 +1,280 @@
+# AetheroOS Memory System Schema Configuration v1.0
+
+version: "1.0"
+storage_engine: "distributed"
+retention_policy: "30d"
+
+# Core Schema Definitions
+schemas:
+  # Agent State Schema
+  agent_state:
+    type: "object"
+    required:
+      - agent_id
+      - timestamp
+      - state
+      - asl_tags
+    properties:
+      agent_id:
+        type: "string"
+        pattern: "^[a-zA-Z0-9_-]+$"
+      timestamp:
+        type: "string"
+        format: "date-time"
+      state:
+        type: "string"
+        enum: ["idle", "processing", "completed", "error", "waiting"]
+      asl_tags:
+        type: "object"
+        additionalProperties: true
+      metrics:
+        type: "object"
+        properties:
+          performance:
+            type: "number"
+          accuracy:
+            type: "number"
+          efficiency:
+            type: "number"
+
+  # Decision Record Schema
+  decision_record:
+    type: "object"
+    required:
+      - decision_id
+      - timestamp
+      - agent_id
+      - context
+      - decision
+      - rationale
+    properties:
+      decision_id:
+        type: "string"
+        pattern: "^dec_[a-zA-Z0-9]+$"
+      timestamp:
+        type: "string"
+        format: "date-time"
+      agent_id:
+        type: "string"
+      context:
+        type: "object"
+        additionalProperties: true
+      decision:
+        type: "object"
+        required:
+          - action
+          - parameters
+        properties:
+          action:
+            type: "string"
+          parameters:
+            type: "object"
+            additionalProperties: true
+      rationale:
+        type: "array"
+        items:
+          type: "string"
+      asl_tags:
+        type: "object"
+        additionalProperties: true
+
+  # Reflection Result Schema
+  reflection_result:
+    type: "object"
+    required:
+      - reflection_id
+      - timestamp
+      - agent_id
+      - metrics
+      - findings
+    properties:
+      reflection_id:
+        type: "string"
+        pattern: "^ref_[a-zA-Z0-9]+$"
+      timestamp:
+        type: "string"
+        format: "date-time"
+      agent_id:
+        type: "string"
+      metrics:
+        type: "object"
+        required:
+          - accuracy
+          - consistency
+          - ethical_compliance
+          - performance
+        properties:
+          accuracy:
+            type: "number"
+          consistency:
+            type: "number"
+          ethical_compliance:
+            type: "number"
+          performance:
+            type: "number"
+      findings:
+        type: "array"
+        items:
+          type: "string"
+      suggestions:
+        type: "array"
+        items:
+          type: "string"
+      asl_tags:
+        type: "object"
+        additionalProperties: true
+
+  # Pipeline Execution Schema
+  pipeline_execution:
+    type: "object"
+    required:
+      - execution_id
+      - start_time
+      - status
+      - agents_involved
+    properties:
+      execution_id:
+        type: "string"
+        pattern: "^exec_[a-zA-Z0-9]+$"
+      start_time:
+        type: "string"
+        format: "date-time"
+      end_time:
+        type: "string"
+        format: "date-time"
+      status:
+        type: "string"
+        enum: ["running", "completed", "failed", "suspended"]
+      agents_involved:
+        type: "array"
+        items:
+          type: "string"
+      execution_graph:
+        type: "object"
+        properties:
+          nodes:
+            type: "array"
+            items:
+              type: "object"
+          edges:
+            type: "array"
+            items:
+              type: "object"
+      metrics:
+        type: "object"
+        properties:
+          total_duration:
+            type: "number"
+          resource_usage:
+            type: "object"
+          success_rate:
+            type: "number"
+      asl_tags:
+        type: "object"
+        additionalProperties: true
+
+# API Endpoints
+endpoints:
+  agent_state:
+    create:
+      method: "POST"
+      path: "/api/v1/agent-states"
+    read:
+      method: "GET"
+      path: "/api/v1/agent-states/{agent_id}"
+    update:
+      method: "PUT"
+      path: "/api/v1/agent-states/{agent_id}"
+    list:
+      method: "GET"
+      path: "/api/v1/agent-states"
+      query_params:
+        - name: "time_range"
+          type: "string"
+        - name: "state"
+          type: "string"
+
+  decision_record:
+    create:
+      method: "POST"
+      path: "/api/v1/decisions"
+    read:
+      method: "GET"
+      path: "/api/v1/decisions/{decision_id}"
+    list:
+      method: "GET"
+      path: "/api/v1/decisions"
+      query_params:
+        - name: "agent_id"
+          type: "string"
+        - name: "time_range"
+          type: "string"
+
+  reflection_result:
+    create:
+      method: "POST"
+      path: "/api/v1/reflections"
+    read:
+      method: "GET"
+      path: "/api/v1/reflections/{reflection_id}"
+    list:
+      method: "GET"
+      path: "/api/v1/reflections"
+      query_params:
+        - name: "agent_id"
+          type: "string"
+        - name: "metric_threshold"
+          type: "number"
+
+  pipeline_execution:
+    create:
+      method: "POST"
+      path: "/api/v1/executions"
+    read:
+      method: "GET"
+      path: "/api/v1/executions/{execution_id}"
+    update:
+      method: "PUT"
+      path: "/api/v1/executions/{execution_id}"
+    list:
+      method: "GET"
+      path: "/api/v1/executions"
+      query_params:
+        - name: "status"
+          type: "string"
+        - name: "time_range"
+          type: "string"
+
+# Indexing Configuration
+indexes:
+  agent_state:
+    - fields: ["agent_id", "timestamp"]
+      type: "btree"
+    - fields: ["state"]
+      type: "hash"
+  
+  decision_record:
+    - fields: ["decision_id"]
+      type: "btree"
+    - fields: ["agent_id", "timestamp"]
+      type: "btree"
+  
+  reflection_result:
+    - fields: ["reflection_id"]
+      type: "btree"
+    - fields: ["agent_id", "timestamp"]
+      type: "btree"
+  
+  pipeline_execution:
+    - fields: ["execution_id"]
+      type: "btree"
+    - fields: ["status", "start_time"]
+      type: "btree"
+
+# Query Optimization
+query_optimization:
+  cache_enabled: true
+  cache_ttl: 3600
+  max_results_per_page: 1000
+  default_sort_field: "timestamp"
+  default_sort_order: "desc"

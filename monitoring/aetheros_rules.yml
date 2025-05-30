@@ -1,0 +1,116 @@
+groups:
+  - name: AetheroOS Alerts
+    rules:
+      # Agent Health Alerts
+      - alert: AgentDown
+        expr: up{job=~"aetheros_agents.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Agent {{ $labels.agent_id }} is down"
+          description: "Agent {{ $labels.agent_id }} has been down for more than 1 minute"
+
+      - alert: HighAgentLatency
+        expr: rate(aetheros_agent_response_time_seconds_sum[5m]) / rate(aetheros_agent_response_time_seconds_count[5m]) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency for {{ $labels.agent_id }}"
+          description: "Agent {{ $labels.agent_id }} has response time > 2s for 5 minutes"
+
+      # Reflection Quality Alerts
+      - alert: LowReflectionQuality
+        expr: aetheros_reflection_quality_score < 0.7
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low reflection quality detected"
+          description: "Reflection quality score has been below 0.7 for 15 minutes"
+
+      - alert: ReflectionProcessingStalled
+        expr: rate(aetheros_reflections_processed_total[15m]) == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Reflection processing has stalled"
+          description: "No reflections have been processed in the last 15 minutes"
+
+      # Memory System Alerts
+      - alert: HighMemoryLatency
+        expr: histogram_quantile(0.95, sum(rate(aetheros_mem_latency_bucket[5m])) by (le)) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory system latency"
+          description: "95th percentile of memory operations taking >500ms"
+
+      - alert: HighMemoryErrorRate
+        expr: rate(aetheros_mem_operations_error_total[5m]) / rate(aetheros_mem_operations_total[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory operation error rate"
+          description: "Memory operation error rate > 1% for 5 minutes"
+
+      # Pipeline Execution Alerts
+      - alert: LowPipelineSuccessRate
+        expr: sum(rate(aetheros_pipeline_executions_success[5m])) / sum(rate(aetheros_pipeline_executions_total[5m])) < 0.95
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low pipeline success rate"
+          description: "Pipeline success rate below 95% for 15 minutes"
+
+      - alert: LongPipelineDuration
+        expr: histogram_quantile(0.95, sum(rate(aetheros_pipeline_duration_seconds_bucket[5m])) by (le)) > 300
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Long pipeline execution times"
+          description: "95th percentile of pipeline executions taking >5 minutes"
+
+      # Resource Usage Alerts
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total{job=~"aetheros_agents.*"}[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage for {{ $labels.agent_id }}"
+          description: "Agent {{ $labels.agent_id }} CPU usage >80% for 10 minutes"
+
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job=~"aetheros_agents.*"} / node_memory_MemTotal_bytes > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage for {{ $labels.agent_id }}"
+          description: "Agent {{ $labels.agent_id }} memory usage >80% for 10 minutes"
+
+      # System Health Alerts
+      - alert: HighErrorRate
+        expr: sum(rate(aetheros_error_total[5m])) by (agent_id) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate for {{ $labels.agent_id }}"
+          description: "Error rate >5% for {{ $labels.agent_id }} over 5 minutes"
+
+      - alert: SystemOverload
+        expr: sum(rate(aetheros_agent_queue_size[5m])) by (agent_id) > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "System overload for {{ $labels.agent_id }}"
+          description: "Queue size >1000 for {{ $labels.agent_id }} over 5 minutes"

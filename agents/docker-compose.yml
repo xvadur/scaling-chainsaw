@@ -1,0 +1,176 @@
+version: '3.8'
+
+services:
+  planner_agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aetheros_planner
+    environment:
+      - AGENT_ID=planner_agent_001
+      - AGENT_ROLE=planner
+      - AETHERO_MEM_URL=http://aethero_mem:8000
+      - PROMETHEUS_PUSHGATEWAY=http://pushgateway:9091
+    volumes:
+      - ../aetheroos_sovereign_agent_stack_v1.0.yaml:/app/config/agent_stack.yaml
+    ports:
+      - "8000:8000"
+    networks:
+      - aetheros_net
+    restart: unless-stopped
+    depends_on:
+      - aethero_mem
+
+  scout_agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aetheros_scout
+    environment:
+      - AGENT_ID=scout_agent_001
+      - AGENT_ROLE=scout
+      - AETHERO_MEM_URL=http://aethero_mem:8000
+      - PROMETHEUS_PUSHGATEWAY=http://pushgateway:9091
+    volumes:
+      - ../aetheroos_sovereign_agent_stack_v1.0.yaml:/app/config/agent_stack.yaml
+    ports:
+      - "8001:8000"
+    networks:
+      - aetheros_net
+    restart: unless-stopped
+    depends_on:
+      - aethero_mem
+
+  analyst_agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aetheros_analyst
+    environment:
+      - AGENT_ID=analyst_agent_001
+      - AGENT_ROLE=analyst
+      - AETHERO_MEM_URL=http://aethero_mem:8000
+      - PROMETHEUS_PUSHGATEWAY=http://pushgateway:9091
+    volumes:
+      - ../aetheroos_sovereign_agent_stack_v1.0.yaml:/app/config/agent_stack.yaml
+    ports:
+      - "8002:8000"
+    networks:
+      - aetheros_net
+    restart: unless-stopped
+    depends_on:
+      - aethero_mem
+
+  generator_agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aetheros_generator
+    environment:
+      - AGENT_ID=generator_agent_001
+      - AGENT_ROLE=generator
+      - AETHERO_MEM_URL=http://aethero_mem:8000
+      - PROMETHEUS_PUSHGATEWAY=http://pushgateway:9091
+    volumes:
+      - ../aetheroos_sovereign_agent_stack_v1.0.yaml:/app/config/agent_stack.yaml
+    ports:
+      - "8003:8000"
+    networks:
+      - aetheros_net
+    restart: unless-stopped
+    depends_on:
+      - aethero_mem
+
+  synthesis_agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aetheros_synthesis
+    environment:
+      - AGENT_ID=synthesis_agent_001
+      - AGENT_ROLE=synthesis
+      - AETHERO_MEM_URL=http://aethero_mem:8000
+      - PROMETHEUS_PUSHGATEWAY=http://pushgateway:9091
+    volumes:
+      - ../aetheroos_sovereign_agent_stack_v1.0.yaml:/app/config/agent_stack.yaml
+    ports:
+      - "8004:8000"
+    networks:
+      - aetheros_net
+    restart: unless-stopped
+    depends_on:
+      - aethero_mem
+
+  reflection_agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.reflection
+    container_name: aetheros_reflection
+    environment:
+      - AGENT_ID=reflection_agent_001
+      - AGENT_ROLE=reflection
+      - AETHERO_MEM_URL=http://aethero_mem:8000
+      - DEEP_EVAL_URL=http://deep_eval:8000
+      - PROMETHEUS_PUSHGATEWAY=http://pushgateway:9091
+    volumes:
+      - ../aetheroos_sovereign_agent_stack_v1.0.yaml:/app/config/agent_stack.yaml
+      - ../reflection/deep_eval_config.yaml:/app/config/deep_eval.yaml
+    ports:
+      - "8005:8000"
+    networks:
+      - aetheros_net
+    restart: unless-stopped
+    depends_on:
+      - aethero_mem
+      - deep_eval
+
+  aethero_mem:
+    build:
+      context: .
+      dockerfile: Dockerfile.memory
+    container_name: aetheros_mem
+    environment:
+      - STORAGE_PATH=/data/aethero_mem
+      - PROMETHEUS_PUSHGATEWAY=http://pushgateway:9091
+    volumes:
+      - ../memory/aethero_mem_schema.yaml:/app/config/schema.yaml
+      - aethero_mem_data:/data/aethero_mem
+    ports:
+      - "9091:8000"
+    networks:
+      - aetheros_net
+    restart: unless-stopped
+
+  deep_eval:
+    build:
+      context: .
+      dockerfile: Dockerfile.deepeval
+    container_name: aetheros_deepeval
+    environment:
+      - MODEL_PATH=/app/models
+      - PROMETHEUS_PUSHGATEWAY=http://pushgateway:9091
+    volumes:
+      - ../reflection/deep_eval_config.yaml:/app/config/deep_eval.yaml
+      - deep_eval_models:/app/models
+    ports:
+      - "9092:8000"
+    networks:
+      - aetheros_net
+    restart: unless-stopped
+
+  pushgateway:
+    image: prom/pushgateway:latest
+    container_name: aetheros_pushgateway
+    ports:
+      - "9091:9091"
+    networks:
+      - aetheros_net
+    restart: unless-stopped
+
+volumes:
+  aethero_mem_data:
+  deep_eval_models:
+
+networks:
+  aetheros_net:
+    external: true

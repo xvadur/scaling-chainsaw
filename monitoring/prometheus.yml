@@ -1,0 +1,72 @@
+# Prometheus Configuration for AetheroOS Monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'alertmanager:9093'
+
+# Rule files
+rule_files:
+  - "aetheros_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Agent Stack Metrics
+  - job_name: 'aetheros_agents'
+    static_configs:
+      - targets:
+          - 'planner_agent:8000'
+          - 'scout_agent:8001'
+          - 'analyst_agent:8002'
+          - 'generator_agent:8003'
+          - 'synthesis_agent:8004'
+          - 'reflection_agent:8005'
+    metrics_path: '/metrics'
+    scheme: 'http'
+    scrape_interval: 10s
+
+  # DeepEval Metrics
+  - job_name: 'deep_eval'
+    static_configs:
+      - targets: ['deep_eval:9090']
+    metrics_path: '/metrics'
+    scheme: 'http'
+
+  # Aethero_Mem Metrics
+  - job_name: 'aethero_mem'
+    static_configs:
+      - targets: ['aethero_mem:9091']
+    metrics_path: '/metrics'
+    scheme: 'http'
+
+  # LangGraph Visualization Metrics
+  - job_name: 'langgraph'
+    static_configs:
+      - targets: ['langgraph:9092']
+    metrics_path: '/metrics'
+    scheme: 'http'
+
+# Metric Relabeling
+metric_relabel_configs:
+  - source_labels: [agent_id]
+    regex: '(.+)'
+    target_label: agent_type
+    replacement: '${1}'
+
+# Remote Write Configuration
+remote_write:
+  - url: 'http://remote-storage:9201/write'
+    queue_config:
+      capacity: 500000
+      max_samples_per_send: 5000
+      batch_send_deadline: '5s'
+    write_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'aetheros_.+'
+        action: keep
